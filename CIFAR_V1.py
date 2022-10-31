@@ -24,8 +24,8 @@ def weight_variable(shape):
 
     # IMPLEMENT YOUR WEIGHT_VARIABLE HERE
     W=tf.random.truncated_normal(shape,stddev=0.1);
-    # initial=tf.keras.initializers.GlorotUniform();
-    # W=initial(shape);
+    # initial=tf.keras.initializers.glorot_uniform();
+    # W=initial.__call__(shape=shape);
     return tf.Variable(W);
     
 
@@ -40,6 +40,9 @@ def bias_variable(shape):
     # IMPLEMENT YOUR BIAS_VARIABLE HERE
 
     b=tf.constant(0.1,shape=shape);
+    # b=tf.random.truncated_normal(shape,stddev=0.1);
+    # initial=tf.keras.initializers.glorot_uniform();
+    # b=initial.__call__(shape=shape);
     return tf.Variable(b);
 
 def conv2d(x, W):
@@ -96,7 +99,7 @@ def cr_summary(x,name):
     hist_summary(x,name);
 
 
-ntrain =  500# per class
+ntrain =  1000# per class
 ntest =  100# per class
 nclass =  10# number of classes
 imsize = 28
@@ -181,8 +184,8 @@ y = tf.nn.softmax(Z_fc2, name='y')
 # --------------------------------------------------
 # loss
 #set up the loss, optimization, evaluation, and accuracy
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices=[1]))
-# cross_entropy=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=Z_fc2,labels=tf_labels));
+# cross_entropy = tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices=[1]))
+cross_entropy=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=Z_fc2,labels=tf_labels))
 #+0.001*(tf.math.reduce_sum(tf.square(W_conv1))+tf.math.reduce_sum(tf.square(W_conv2))+tf.math.reduce_sum(tf.square(W_fc1))+tf.math.reduce_sum(tf.square(W_fc2)));
 
 correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(tf_labels, 1))
@@ -193,7 +196,7 @@ c= lambda:tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices
 # optimization
 train_step = tf.train.AdamOptimizer(1e-3).minimize(cross_entropy)
 # train_step = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy)
-# train_step = tf.train.MomentumOptimizer(learning_rate=1e-3,momentum=0.9).minimize(cross_entropy)
+# train_step = tf.train.MomentumOptimizer(learning_rate=1e-2,momentum=0.9).minimize(cross_entropy)
 # train_step = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(cross_entropy)
 # train_step=tf.keras.optimizers.SGD(learning_rate=1e-4).minimize(c,var_list=[W_conv1,W_conv2,W_fc1,W_fc2,b_conv1,b_conv2,b_fc1,b_fc2])
 # Add a scalar summary for the snapshot loss.
@@ -215,10 +218,11 @@ cr_summary(h_fc1,"h_fc1");
 cr_summary(W_fc2,"W_fc2");
 cr_summary(b_fc2,"b_fc2");
 cr_summary(Z_fc2,"Z_fc2");
-
+acc=tf.summary.scalar("Accuracy", accuracy) 
 
 summary_op = tf.summary.merge_all()
-summary_op2 = tf.summary.merge([cost])
+# summary_op2 = tf.summary.merge([cost,acc])
+summary_op2 = tf.summary.merge_all()
 sess.run(tf.initialize_all_variables())
 # sess.run(tf.global_variables_initializer())
 summary_writer = tf.summary.FileWriter(result_dir1, sess.graph)
@@ -227,7 +231,7 @@ summary_writer2 = tf.summary.FileWriter(result_dir2, sess.graph)
 batch_xs = np.zeros((batchsize,28,28,1))#setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
 batch_ys = np.zeros((batchsize,10))#setup as [batchsize, the how many classes] 
 for i in range(5000): # try a small iteration size once it works then continue
-    perm = np.arange(5000)
+    perm = np.arange(10000)
     np.random.shuffle(perm)
     # print(perm)
     for j in range(batchsize):
@@ -243,15 +247,21 @@ for i in range(5000): # try a small iteration size once it works then continue
         summary_writer.add_summary(summary_str, i)
         summary_writer.flush()
 
+    if i%1100==0:
+        print("test accuracy %g"%accuracy.eval(feed_dict={tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
+        summary_str2 = sess.run(summary_op2, feed_dict={tf_data: Test, tf_labels: LTest, keep_prob: 1.0})
+        summary_writer2.add_summary(summary_str2, i)
+        summary_writer2.flush()
+
     train_step.run(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 0.5}) # dropout only during training
 
 # --------------------------------------------------
 # test
 
-
-
-
 print("test accuracy %g"%accuracy.eval(feed_dict={tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
+
+
+
 n_filters, ix = 32, 1
 plt.figure(figsize=(10,10))
 for i in range(n_filters):
@@ -261,7 +271,7 @@ for i in range(n_filters):
         # plot each channel separately
     for j in range(1):
             # specify subplot and turn of axis
-        ax = plt.subplot(7, 5, ix)
+        ax = plt.subplot(8, 4, ix)
         ax.set_xticks([])
         ax.set_yticks([])
             # plot filter channel in grayscale

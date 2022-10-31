@@ -96,7 +96,7 @@ def cr_summary(x,name):
     hist_summary(x,name);
 
 
-ntrain =  500# per class
+ntrain =  1000# per class
 ntest =  100# per class
 nclass =  10# number of classes
 imsize = 28
@@ -233,8 +233,8 @@ summary_writer2 = tf.summary.FileWriter(result_dir2, sess.graph)
 saver=tf.train.Saver()
 batch_xs = np.zeros((batchsize,28,28,1))#setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
 batch_ys = np.zeros((batchsize,10))#setup as [batchsize, the how many classes] 
-for i in range(2000): # try a small iteration size once it works then continue
-    perm = np.arange(5000)
+for i in range(5000): # try a small iteration size once it works then continue
+    perm = np.arange(10000)
     np.random.shuffle(perm)
     # print(perm)
     for j in range(batchsize):

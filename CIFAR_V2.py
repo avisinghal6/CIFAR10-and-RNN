@@ -35,7 +35,6 @@ from matplotlib import pyplot
 #     plt.imshow(img,cmap='gray')
 #     plt.show()
 
-
 def weight_variable(shape):
     '''
     Initialize weights
@@ -64,6 +63,8 @@ def bias_variable(shape):
     # IMPLEMENT YOUR BIAS_VARIABLE HERE
     # b=tf.random.truncated_normal(shape,stddev=0.1);
     b=tf.constant(0.1,shape=shape);
+    # initial=tf.keras.initializers.GlorotUniform();
+    # b=initial(shape);
     return tf.Variable(b);
 
 
@@ -140,7 +141,7 @@ def cr_summary(x,name):
 
 def main():
     # Specify training parameters
-    max_step = 5000 # the maximum iterations. After max_step iterations, the training will stop no matter what
+    max_step = 10000 # the maximum iterations. After max_step iterations, the training will stop no matter what
 
     start_time = time.time() # start timing
 
@@ -159,14 +160,14 @@ def main():
     
     train_summary_dir = 'log/train/'
     train_summary_writer = tf.summary.create_file_writer(train_summary_dir)
-    train_data=getData("Train",50)
+    train_data=getData("Train",32)
     test_data=getData("Test",1000)
     # for x,y in test_data.take(1):
     #     print(x.shape)
     it=iter(train_data);
     test_dir = 'log/test/'
     test_summary_writer = tf.summary.create_file_writer(test_dir)
-    train_step = tf.keras.optimizers.Adam(learning_rate=0.001);
+    train_step = tf.keras.optimizers.Adam(learning_rate=1e-3);
     # train_step = tf.train.AdagradOptimizer(1e-4)
     # train_step = tf.train.MomentumOptimizer(learning_rate=1e-4,momentum=0.9)
     # train_step = tf.train.GradientDescentOptimizer(learning_rate=1e-4)
@@ -187,7 +188,7 @@ def main():
                     image_batch, labels_batch = next(it)
 
             x=image_batch;
-            # print(x)
+            # print(x.shape)
             y=labels_batch; 
             # print(y)
             with tf.GradientTape() as tape:
@@ -221,9 +222,11 @@ def main():
                 # Fully connected layer 2 (Output layer)
                 Z_fc2=tf.matmul(h_fc1, W_fc2) + b_fc2;
                 y_conv = tf.nn.softmax(Z_fc2, name='y_conv')
-                cross_entropy =tf.reduce_mean(-tf.reduce_sum(y* tf.math.log(y_conv)));
-                # cross_entropy=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=Z_fc2,labels=y))+0.002*(tf.math.reduce_sum(tf.square(W_conv1))+tf.math.reduce_sum(tf.square(W_conv2))+tf.math.reduce_sum(tf.square(W_fc1))+tf.math.reduce_sum(tf.square(W_fc2)));
+                # cross_entropy =tf.reduce_mean(-tf.reduce_sum(y* tf.math.log(y_conv)));
+                cross_entropy=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=Z_fc2,labels=y))
                 #different cross entropy- logits
+                #+0.002*(tf.math.reduce_sum(tf.square(W_conv1))+tf.math.reduce_sum(tf.square(W_conv2))+tf.math.reduce_sum(tf.square(W_fc1))+tf.math.reduce_sum(tf.square(W_fc2)));
+
             if(i%500==0):
                 cr_summary(W_conv1,"W_Conv1");
                 cr_summary(b_conv1,"b_Conv1");

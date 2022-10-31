@@ -12,36 +12,6 @@ if(tf.__version__.split('.')[0]=='2'):
     import tensorflow.compat.v1 as tf
     tf.disable_v2_behavior()
 
-def weight_variable(shape):
-    '''
-    Initialize weights
-    :param shape: shape of weights, e.g. [w, h ,Cin, Cout] where
-    w: width of the filters
-    h: height of the filters
-    Cin: the number of the channels of the filters
-    Cout: the number of filters
-    :return: a tensor variable for weights with initial values
-    '''
-
-    # IMPLEMENT YOUR WEIGHT_VARIABLE HERE
-    W=tf.random.truncated_normal(shape,stddev=0.1);
-    # initial=tf.keras.initializers.GlorotUniform();
-    # W=initial(shape);
-    return tf.Variable(W,name="W");
-    
-
-def bias_variable(shape):
-    '''
-    Initialize biases
-    :param shape: shape of biases, e.g. [Cout] where
-    Cout: the number of filters
-    :return: a tensor variable for biases with initial values
-    '''
-
-    # IMPLEMENT YOUR BIAS_VARIABLE HERE
-
-    b=tf.constant(0.1,shape=shape);
-    return tf.Variable(b,name="B");
 
 def conv2d(x, W):
     '''
@@ -83,7 +53,7 @@ ntest =  100# per class
 nclass =  10# number of classes
 imsize = 28
 nchannels = 1
-batchsize = 50
+batchsize = 5
 
 Train = np.zeros((ntrain*nclass,imsize,imsize,nchannels))
 Test = np.zeros((ntest*nclass,imsize,imsize,nchannels))
@@ -148,6 +118,11 @@ dconv2=conv2d(unrelu2, tf.transpose(W_conv2,perm=[1,0,3,2]));
 unpooling1 = tfa.layers.MaxUnpooling2D()(dconv2, max_index1)
 unrelu1= tf.nn.relu(unpooling1);
 dconv1=conv2d(unrelu1, tf.transpose(W_conv1,perm=[1,0,3,2]));
+
+Unpooling1 = tfa.layers.MaxUnpooling2D()(h_pool1, max_index1)
+Unrelu1= tf.nn.relu(Unpooling1);
+Dconv1=conv2d(Unrelu1, tf.transpose(W_conv1,perm=[1,0,3,2]));
+
 # Fully connected layer 1
 h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
 
@@ -183,36 +158,46 @@ save_path = saver.restore(sess, "SAVE/weights.ckpt")
 batch_xs = np.zeros((batchsize,28,28,1))#setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
 batch_ys = np.zeros((batchsize,10))#setup as [batchsize, the how many classes] 
 for i in range(1): # try a small iteration size once it works then continue
-    perm = np.arange(5000)
+    perm = np.arange(1000)
     np.random.shuffle(perm)
-    print(perm[0])
-    for j in range(1):
-        batch_xs[j,:,:,:] = Train[perm[j],:,:,:]
-        batch_ys[j,:] = LTrain[perm[j],:]
+    # print(perm[0])
+    for j in range(batchsize):
+        batch_xs[j,:,:,:] = Test[perm[j],:,:,:]
+        batch_ys[j,:] = LTest[perm[j],:]
 
-    accuracy.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1}) # dropout only during training
-
+    acc=accuracy.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1}) # dropout only during training
+    print("accuracy",acc);
 
 # --------------------------------------------------
 
-n_filters, ix = 32, 1
 plt.figure(figsize=(10,10))
-for i in range(1):
+for i in range(batchsize):
         # get the filter
-    t=W_conv1.eval();
+    
+    t1=Dconv1.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1})
     t2=dconv2.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1})
-    # print(t2.shape)
     # print(t[:,:,:,1])
     # print(t2[:,:,:,1])
-    f = t2[:, :, :, i]
+    f1 = t1[i, :, :, 0]
+    f2= t2[i, :, :, 0]
+    # print(f.shape)
         # plot each channel separately
     for j in range(1):
             # specify subplot and turn of axis
-        ax = plt.subplot(1,1, ix)
+        ax = plt.subplot(5,3, ix)
         ax.set_xticks([])
         ax.set_yticks([])
             # plot filter channel in grayscale
-        plt.imshow(f[:, :, j], cmap='gray')
+        plt.title("Dconv1")
+        plt.imshow(f1[:,:], cmap='gray')
+        ix += 1
+        ax = plt.subplot(5,3, ix)
+        plt.title("Original Image 1")
+        plt.imshow(batch_xs[i,:,:,0], cmap='gray')
+        ix += 1
+        ax = plt.subplot(5,3, ix)
+        plt.title("Dconv2")
+        plt.imshow(f2[:,:], cmap='gray')
         ix += 1
         # show the figure
 plt.show()
