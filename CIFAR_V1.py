@@ -196,7 +196,7 @@ c= lambda:tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices
 # optimization
 train_step = tf.train.AdamOptimizer(1e-3).minimize(cross_entropy)
 # train_step = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy)
-# train_step = tf.train.MomentumOptimizer(learning_rate=1e-2,momentum=0.9).minimize(cross_entropy)
+# train_step = tf.train.MomentumOptimizer(learning_rate=1e-3,momentum=0.9).minimize(cross_entropy)
 # train_step = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(cross_entropy)
 # train_step=tf.keras.optimizers.SGD(learning_rate=1e-4).minimize(c,var_list=[W_conv1,W_conv2,W_fc1,W_fc2,b_conv1,b_conv2,b_fc1,b_fc2])
 # Add a scalar summary for the snapshot loss.

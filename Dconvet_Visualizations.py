@@ -11,7 +11,7 @@ import tensorflow_addons as tfa
 if(tf.__version__.split('.')[0]=='2'):
     import tensorflow.compat.v1 as tf
     tf.disable_v2_behavior()
-
+    
 
 def conv2d(x, W):
     '''
@@ -110,10 +110,11 @@ Z_conv2=conv2d(h_pool1, W_conv2) + b_conv2;
 h_conv2 = tf.nn.relu(Z_conv2)
 
 h_pool2, max_index2 = tf.nn.max_pool_with_argmax(h_conv2, ksize=[1,2,2,1],strides=[1,2,2,1],padding="SAME")
+
 unpooling2 = tfa.layers.MaxUnpooling2D()(h_pool2, max_index2)
 unrelu2= tf.nn.relu(unpooling2);
-
 dconv2=conv2d(unrelu2, tf.transpose(W_conv2,perm=[1,0,3,2]));
+# dconv2=conv2d(unrelu2-b_conv2, tf.transpose(W_conv2,perm=[1,0,3,2]));
 
 unpooling1 = tfa.layers.MaxUnpooling2D()(dconv2, max_index1)
 unrelu1= tf.nn.relu(unpooling1);
@@ -122,6 +123,7 @@ dconv1=conv2d(unrelu1, tf.transpose(W_conv1,perm=[1,0,3,2]));
 Unpooling1 = tfa.layers.MaxUnpooling2D()(h_pool1, max_index1)
 Unrelu1= tf.nn.relu(Unpooling1);
 Dconv1=conv2d(Unrelu1, tf.transpose(W_conv1,perm=[1,0,3,2]));
+# Dconv1=conv2d(Unrelu1-b_conv1, tf.transpose(W_conv1,perm=[1,0,3,2]));
 
 # Fully connected layer 1
 h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
@@ -169,13 +171,13 @@ for i in range(1): # try a small iteration size once it works then continue
     print("accuracy",acc);
 
 # --------------------------------------------------
-
+ix=1
 plt.figure(figsize=(10,10))
 for i in range(batchsize):
         # get the filter
     
     t1=Dconv1.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1})
-    t2=dconv2.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1})
+    t2=dconv1.eval(feed_dict={tf_data:batch_xs, tf_labels:batch_ys, keep_prob: 1})
     # print(t[:,:,:,1])
     # print(t2[:,:,:,1])
     f1 = t1[i, :, :, 0]
@@ -184,21 +186,23 @@ for i in range(batchsize):
         # plot each channel separately
     for j in range(1):
             # specify subplot and turn of axis
+        
         ax = plt.subplot(5,3, ix)
-        ax.set_xticks([])
-        ax.set_yticks([])
-            # plot filter channel in grayscale
+        # plot filter channel in grayscale
         plt.title("Dconv1")
         plt.imshow(f1[:,:], cmap='gray')
         ix += 1
         ax = plt.subplot(5,3, ix)
         plt.title("Original Image 1")
         plt.imshow(batch_xs[i,:,:,0], cmap='gray')
+        ax.set_xticks([])
+        ax.set_yticks([])
         ix += 1
         ax = plt.subplot(5,3, ix)
         plt.title("Dconv2")
         plt.imshow(f2[:,:], cmap='gray')
         ix += 1
+        
         # show the figure
 plt.show()
 

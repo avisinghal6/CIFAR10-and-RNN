@@ -141,7 +141,7 @@ def cr_summary(x,name):
 
 def main():
     # Specify training parameters
-    max_step = 10000 # the maximum iterations. After max_step iterations, the training will stop no matter what
+    max_step = 5000 # the maximum iterations. After max_step iterations, the training will stop no matter what
 
     start_time = time.time() # start timing
 
